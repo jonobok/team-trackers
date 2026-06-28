@@ -144,6 +144,8 @@ html.dark .quick-inp{background:var(--surface2);color:var(--text);border-color:r
 
 /* INPUTS */
 .inp-card{background:var(--surface2);border:1px solid var(--border);border-radius:9px;padding:9px 11px;margin-bottom:6px;}
+.inp-card.policy-bound{border-color:var(--green);background:linear-gradient(135deg,var(--surface2) 0%,var(--green-light) 100%);box-shadow:0 0 0 1px var(--green);transition:background 0.4s ease,border-color 0.3s,box-shadow 0.3s;}
+html.dark .inp-card.policy-bound{background:linear-gradient(135deg,var(--surface2) 0%,#1a2e1a 100%);}
 .inp-card:focus-within{border-color:var(--blue);}
 .inp-row{display:flex;align-items:center;gap:8px;margin-bottom:4px;}
 .inp-row:last-child{margin-bottom:0;}
@@ -943,8 +945,22 @@ function addCompleted(data){
 function addPolicy(data){
   const list=$('policiesList');
   const card=document.createElement('div');card.className='p-card inp-card';
+  let celebrated=!!(data&&data.client);
+  if(celebrated)card.classList.add('policy-bound');
   const top=document.createElement('div');top.className='inp-top';top.style.cssText='display:flex;align-items:center;gap:8px;margin-bottom:5px;';
-  const ni=document.createElement('input');ni.type='text';ni.placeholder='Client';if(data)ni.value=data.client||'';ni.addEventListener('input',()=>{saveState();updateStats();updateBadge('policies');});
+  const ni=document.createElement('input');ni.type='text';ni.placeholder='Client';if(data)ni.value=data.client||'';
+  ni.addEventListener('input',()=>{
+    saveState();updateStats();updateBadge('policies');
+    if(ni.value.trim()&&!celebrated){
+      celebrated=true;
+      card.classList.add('policy-bound');
+      card.classList.remove('block-complete-anim');void card.offsetWidth;card.classList.add('block-complete-anim');
+      spawnConfetti(card,16);setTimeout(()=>spawnConfetti(card,12),160);setTimeout(()=>spawnConfetti(card,8),320);
+    } else if(!ni.value.trim()&&celebrated){
+      celebrated=false;
+      card.classList.remove('policy-bound');
+    }
+  });
   const del=makeDelBtn(()=>{card.remove();updateStats();updateBadge('policies');});top.appendChild(ni);top.appendChild(del);
   const tRow=document.createElement('div');tRow.className='inp-row';
   const tLbl=document.createElement('span');tLbl.className='inp-lbl';tLbl.textContent='Policy Type';
@@ -1276,6 +1292,7 @@ checkSlowAlert();
 setInterval(saveState,30000);
 setInterval(highlightBlocks,60000);
 setInterval(checkSlowAlert,60000);  // check every minute
+setInterval(()=>{checkResets();updateStats();},60000);  // catch midnight rollover even if tab stays open
 </script>
 </body>
 </html>
