@@ -1694,6 +1694,7 @@ checkSlowAlert();
 setInterval(saveState,30000);
 setInterval(highlightBlocks,60000);
 setInterval(checkSlowAlert,60000);  // check every minute
+setInterval(()=>{checkResets();updateStats();},60000);  // catch midnight rollover even if tab stays open
 </script>
 </body>
 </html>
