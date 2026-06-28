@@ -146,6 +146,26 @@ html.dark .quick-inp{background:var(--surface2);color:var(--text);border-color:r
 .inp-card{background:var(--surface2);border:1px solid var(--border);border-radius:9px;padding:9px 11px;margin-bottom:6px;}
 .inp-card.policy-bound{border-color:var(--green);background:linear-gradient(135deg,var(--surface2) 0%,var(--green-light) 100%);box-shadow:0 0 0 1px var(--green);transition:background 0.4s ease,border-color 0.3s,box-shadow 0.3s;}
 html.dark .inp-card.policy-bound{background:linear-gradient(135deg,var(--surface2) 0%,#1a2e1a 100%);}
+
+/* ENTRY FORM — always-visible add form, separate from the finalized list */
+.entry-form{background:var(--blue-light);border:1.5px dashed var(--blue-mid);border-radius:10px;padding:11px 12px;margin-bottom:10px;}
+.entry-inp{width:100%;border:1px solid var(--border);border-radius:7px;padding:8px 10px;font-size:13px;font-weight:600;font-family:'DM Sans',sans-serif;color:var(--text);background:var(--surface);outline:none;margin-bottom:7px;}
+.entry-inp:focus{border-color:var(--blue);}
+.entry-inp::placeholder{color:var(--muted);opacity:0.7;}
+.entry-row{display:flex;align-items:center;gap:6px;margin-bottom:7px;}
+.entry-lbl{font-size:10px;font-weight:600;color:var(--muted);white-space:nowrap;min-width:68px;}
+.entry-field{flex:1;border:1px solid var(--border);border-radius:7px;padding:7px 9px;font-size:12px;font-family:'DM Sans',sans-serif;color:var(--text);background:var(--surface);outline:none;}
+.entry-field:focus{border-color:var(--blue);}
+.entry-field::placeholder{color:var(--muted);opacity:0.7;}
+.entry-notes{width:100%;border:1px solid var(--border);border-radius:7px;padding:7px 9px;font-size:12px;font-family:'DM Sans',sans-serif;color:var(--text);background:var(--surface);outline:none;resize:none;line-height:1.5;margin-bottom:7px;}
+.entry-notes:focus{border-color:var(--blue);}
+.entry-notes::placeholder{color:var(--muted);opacity:0.7;}
+.entry-submit{width:100%;background:linear-gradient(135deg,var(--blue),var(--blue-bright));color:#fff;border:none;border-radius:8px;padding:10px;font-size:13px;font-weight:600;font-family:'Syne',sans-serif;cursor:pointer;transition:opacity 0.15s,transform 0.12s;}
+.entry-submit:hover{opacity:0.9;}
+.entry-submit:active{transform:scale(0.98);}
+html.dark .entry-form{background:#2a3550;border-color:#3d5080;}
+html.dark .entry-inp,html.dark .entry-field,html.dark .entry-notes{background:#2f2f2f;color:var(--text);border-color:rgba(255,255,255,0.12);}
+html.dark .entry-lbl{color:#a0a0a0;}
 .inp-card:focus-within{border-color:var(--blue);}
 .inp-row{display:flex;align-items:center;gap:8px;margin-bottom:4px;}
 .inp-row:last-child{margin-bottom:0;}
@@ -541,8 +561,19 @@ html.dark .n-card input{color:#ececec;}
         </div>
         <div class="block-body">
           <div class="divider"></div>
+          <div class="entry-form" id="quoteForm">
+            <input type="text" class="entry-inp" id="qf-client" placeholder="Client">
+            <div class="entry-row">
+              <span class="entry-lbl">Submission</span>
+              <input type="text" class="entry-field" id="qf-sub" placeholder="Sub Number">
+            </div>
+            <div class="entry-row" style="align-items:flex-start;">
+              <span class="entry-lbl" style="padding-top:7px;">Notes</span>
+              <textarea class="entry-notes" id="qf-notes" placeholder="Notes" rows="2"></textarea>
+            </div>
+            <button class="entry-submit" onclick="submitQuote()">Add Quote</button>
+          </div>
           <div id="quoteList"></div>
-          <button class="btn-add" onclick="addQuote()">+ add quote</button>
         </div>
       </div>
 
@@ -566,8 +597,12 @@ html.dark .n-card input{color:#ececec;}
         </div>
         <div class="block-body">
           <div class="divider"></div>
+          <div class="entry-form" id="completedForm">
+            <input type="text" class="entry-inp" id="cf-client" placeholder="Client">
+            <textarea class="entry-notes" id="cf-notes" placeholder="Notes — what was discussed" rows="2"></textarea>
+            <button class="entry-submit" onclick="submitCompleted()">Add Conducted FFR</button>
+          </div>
           <div id="completedList"></div>
-          <button class="btn-add" onclick="addCompleted()">+ add conducted FFR</button>
         </div>
       </div>
 
@@ -580,8 +615,19 @@ html.dark .n-card input{color:#ececec;}
         </div>
         <div class="block-body">
           <div class="divider"></div>
+          <div class="entry-form" id="policyForm">
+            <input type="text" class="entry-inp" id="pf-client" placeholder="Client">
+            <div class="entry-row">
+              <span class="entry-lbl">Policy Type</span>
+              <input type="text" class="entry-field" id="pf-type" placeholder="e.g. Auto, Home">
+            </div>
+            <div class="entry-row">
+              <span class="entry-lbl">Premium</span>
+              <input type="text" class="entry-field" id="pf-premium" placeholder="e.g. $1,200/yr">
+            </div>
+            <button class="entry-submit" onclick="submitPolicy()">Add Policy</button>
+          </div>
           <div id="policiesList"></div>
-          <button class="btn-add" onclick="addPolicy()">+ add policy</button>
         </div>
       </div>
 
@@ -927,6 +973,19 @@ function addQuote(data){
   notesRow.appendChild(nLbl);notesRow.appendChild(ta);
   card.appendChild(top);card.appendChild(subRow);card.appendChild(notesRow);list.appendChild(card);
   updateStats();
+  return card;
+}
+function submitQuote(){
+  const client=$('qf-client').value.trim();
+  if(!client){$('qf-client').focus();return;}
+  const sub=$('qf-sub').value.trim();
+  const notes=$('qf-notes').value.trim();
+  const card=addQuote({client,sub,notes});
+  saveState();updateStats();
+  card.classList.remove('block-complete-anim');void card.offsetWidth;card.classList.add('block-complete-anim');
+  spawnConfetti(card,14);setTimeout(()=>spawnConfetti(card,10),160);
+  $('qf-client').value='';$('qf-sub').value='';$('qf-notes').value='';
+  $('qf-client').focus();
 }
 
 // ── CONDUCTED FFRs ────────────────────────────────────
@@ -939,28 +998,26 @@ function addCompleted(data){
   top.appendChild(inp);top.appendChild(del);
   const ta=document.createElement('textarea');ta.className='comp-notes';ta.placeholder='Notes — what was discussed';if(data)ta.value=data.notes||'';ta.addEventListener('input',saveState);
   card.appendChild(top);card.appendChild(ta);list.appendChild(card);updateBadge('completed');updateStats();
+  return card;
+}
+function submitCompleted(){
+  const client=$('cf-client').value.trim();
+  if(!client){$('cf-client').focus();return;}
+  const notes=$('cf-notes').value.trim();
+  const card=addCompleted({client,notes});
+  saveState();updateStats();updateBadge('completed');
+  card.classList.remove('block-complete-anim');void card.offsetWidth;card.classList.add('block-complete-anim');
+  spawnConfetti(card,14);setTimeout(()=>spawnConfetti(card,10),160);
+  $('cf-client').value='';$('cf-notes').value='';
+  $('cf-client').focus();
 }
 
 // ── POLICIES BOUND ────────────────────────────────────
 function addPolicy(data){
   const list=$('policiesList');
-  const card=document.createElement('div');card.className='p-card inp-card';
-  let celebrated=!!(data&&data.client);
-  if(celebrated)card.classList.add('policy-bound');
+  const card=document.createElement('div');card.className='p-card inp-card policy-bound';
   const top=document.createElement('div');top.className='inp-top';top.style.cssText='display:flex;align-items:center;gap:8px;margin-bottom:5px;';
-  const ni=document.createElement('input');ni.type='text';ni.placeholder='Client';if(data)ni.value=data.client||'';
-  ni.addEventListener('input',()=>{
-    saveState();updateStats();updateBadge('policies');
-    if(ni.value.trim()&&!celebrated){
-      celebrated=true;
-      card.classList.add('policy-bound');
-      card.classList.remove('block-complete-anim');void card.offsetWidth;card.classList.add('block-complete-anim');
-      spawnConfetti(card,16);setTimeout(()=>spawnConfetti(card,12),160);setTimeout(()=>spawnConfetti(card,8),320);
-    } else if(!ni.value.trim()&&celebrated){
-      celebrated=false;
-      card.classList.remove('policy-bound');
-    }
-  });
+  const ni=document.createElement('input');ni.type='text';ni.placeholder='Client';if(data)ni.value=data.client||'';ni.addEventListener('input',()=>{saveState();updateStats();updateBadge('policies');});
   const del=makeDelBtn(()=>{card.remove();updateStats();updateBadge('policies');});top.appendChild(ni);top.appendChild(del);
   const tRow=document.createElement('div');tRow.className='inp-row';
   const tLbl=document.createElement('span');tLbl.className='inp-lbl';tLbl.textContent='Policy Type';
@@ -971,6 +1028,19 @@ function addPolicy(data){
   const pi=document.createElement('input');pi.type='text';pi.placeholder='e.g. $1,200/yr';if(data)pi.value=data.premium||'';pi.addEventListener('input',saveState);
   pRow.appendChild(pLbl);pRow.appendChild(pi);
   card.appendChild(top);card.appendChild(tRow);card.appendChild(pRow);list.appendChild(card);updateBadge('policies');updateStats();
+  return card;
+}
+function submitPolicy(){
+  const client=$('pf-client').value.trim();
+  if(!client){$('pf-client').focus();return;}
+  const type=$('pf-type').value.trim();
+  const premium=$('pf-premium').value.trim();
+  const card=addPolicy({client,type,premium});
+  saveState();updateStats();updateBadge('policies');
+  card.classList.remove('block-complete-anim');void card.offsetWidth;card.classList.add('block-complete-anim');
+  spawnConfetti(card,16);setTimeout(()=>spawnConfetti(card,12),160);setTimeout(()=>spawnConfetti(card,8),320);
+  $('pf-client').value='';$('pf-type').value='';$('pf-premium').value='';
+  $('pf-client').focus();
 }
 
 // ── QUICK ADD ─────────────────────────────────────────
@@ -1292,6 +1362,7 @@ checkSlowAlert();
 setInterval(saveState,30000);
 setInterval(highlightBlocks,60000);
 setInterval(checkSlowAlert,60000);  // check every minute
+setInterval(()=>{checkResets();updateStats();},60000);  // catch midnight rollover even if tab stays open
 </script>
 </body>
 </html>
