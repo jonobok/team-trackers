@@ -323,6 +323,24 @@ html.dark .clock-hours-val{color:#8ab4f8;}
 html.dark .clock-hours-lbl{color:#8ab4f8;}
 html.dark .clock-status-pill.off{background:#3a3a3a;color:#a0a0a0;}
 
+/* RENEWAL CONTACT TRACKER */
+.renewal-tracker{background:var(--blue-light);border:1px solid var(--blue-mid);border-radius:10px;padding:10px 12px;margin-bottom:10px;}
+.renewal-row{display:flex;align-items:center;gap:9px;padding:6px 0;}
+.renewal-row:not(:last-child){border-bottom:1px solid var(--blue-mid);}
+.renewal-chk{width:24px;height:24px;border-radius:50%;border:2px solid var(--blue-mid);background:var(--surface);cursor:pointer;display:flex;align-items:center;justify-content:center;flex-shrink:0;transition:all 0.22s cubic-bezier(.34,1.56,.64,1);}
+.renewal-chk:hover{border-color:var(--green);background:var(--green-light);}
+.renewal-chk.checked{background:var(--green);border-color:var(--green);transform:scale(1.1);}
+.renewal-chk svg{opacity:0;transition:opacity 0.15s;}
+.renewal-chk.checked svg{opacity:1;}
+.renewal-label{font-size:13px;font-weight:600;color:var(--text);flex:1;}
+.renewal-row.checked .renewal-label{text-decoration:line-through;color:var(--muted);}
+.renewal-date{font-size:11px;font-weight:600;color:var(--blue);background:var(--surface);padding:3px 9px;border-radius:20px;border:1px solid var(--blue-mid);white-space:nowrap;}
+html.dark .renewal-tracker{background:#2a3550;border-color:#3d5080;}
+html.dark .renewal-row:not(:last-child){border-color:#3d5080;}
+html.dark .renewal-chk{background:#2f2f2f;border-color:#3d5080;}
+html.dark .renewal-label{color:#ececec;}
+html.dark .renewal-date{background:#2f2f2f;color:#8ab4f8;border-color:#3d5080;}
+
 /* SLOW DAY ALERT */
 .slow-alert{position:fixed;top:160px;left:50%;transform:translateX(-50%);background:#CC0000;color:#fff;padding:10px 20px;border-radius:10px;font-size:13px;font-weight:600;font-family:'DM Sans',sans-serif;z-index:150;box-shadow:0 4px 16px rgba(204,0,0,0.35);display:flex;align-items:center;gap:10px;opacity:0;pointer-events:none;transition:opacity 0.3s,transform 0.3s;transform:translateX(-50%) translateY(-8px);max-width:90vw;}
 .slow-alert.show{opacity:1;pointer-events:all;transform:translateX(-50%) translateY(0);}
@@ -406,8 +424,6 @@ html.dark .quick-inp{background:#3a3a3a;color:#ececec;border-color:rgba(255,255,
 html.dark .quick-inp::placeholder{color:#a0a0a0;}
 /* Expand/Collapse buttons */
 html.dark .ffr-chev{color:#ececec;}
-html.dark button[onclick="toggleAllDays(true)"]{background:#3a3a3a!important;border-color:rgba(255,255,255,0.15)!important;color:#ececec!important;}
-html.dark button[onclick="toggleAllDays(false)"]{background:#2f2f2f!important;border-color:rgba(255,255,255,0.10)!important;color:#a0a0a0!important;}
 /* History */
 html.dark .month-hdr{background:linear-gradient(135deg,#1a2d6a,#1565f5);}
 html.dark .week-entry:hover{background:#3a3a3a;}
@@ -604,9 +620,22 @@ html.dark .n-card input{color:#ececec;}
         </div>
         <div class="block-body">
           <div class="divider"></div>
-          <div style="display:flex;gap:6px;margin-bottom:10px;">
-            <button onclick="toggleAllDays(true)" style="flex:1;background:var(--blue-light);border:1px solid var(--blue-mid);color:var(--blue);border-radius:7px;padding:6px;font-size:11px;font-weight:600;font-family:'DM Sans',sans-serif;cursor:pointer;" class="expand-btn">Expand All</button>
-            <button onclick="toggleAllDays(false)" style="flex:1;background:var(--surface2);border:1px solid var(--border);color:var(--muted);border-radius:7px;padding:6px;font-size:11px;font-weight:600;font-family:'DM Sans',sans-serif;cursor:pointer;">Collapse All</button>
+          <div class="renewal-tracker" id="renewalTracker">
+            <div class="renewal-row" id="renewal-15">
+              <button class="renewal-chk" id="renewal-chk-15" onclick="toggleRenewal('15')"><svg width="13" height="13" viewBox="0 0 13 13" fill="none" stroke="#fff" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M2 6.5l3 3 6-6"/></svg></button>
+              <span class="renewal-label">15-day renewals</span>
+              <span class="renewal-date" id="renewal-date-15"></span>
+            </div>
+            <div class="renewal-row" id="renewal-30">
+              <button class="renewal-chk" id="renewal-chk-30" onclick="toggleRenewal('30')"><svg width="13" height="13" viewBox="0 0 13 13" fill="none" stroke="#fff" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M2 6.5l3 3 6-6"/></svg></button>
+              <span class="renewal-label">30-day renewals</span>
+              <span class="renewal-date" id="renewal-date-30"></span>
+            </div>
+            <div class="renewal-row" id="renewal-55">
+              <button class="renewal-chk" id="renewal-chk-55" onclick="toggleRenewal('55')"><svg width="13" height="13" viewBox="0 0 13 13" fill="none" stroke="#fff" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M2 6.5l3 3 6-6"/></svg></button>
+              <span class="renewal-label">55-day renewals</span>
+              <span class="renewal-date" id="renewal-date-55"></span>
+            </div>
           </div>
           <div id="ffrSection"></div>
         </div>
@@ -788,8 +817,64 @@ let HIST={};  // weekly history
 // ── HELPERS ───────────────────────────────────────────
 function $(id){return document.getElementById(id);}
 function getToday(){return['Sunday','Monday','Tuesday','Wednesday','Thursday','Friday','Saturday'][new Date().getDay()];}
-function getWeekKey(d){const x=new Date(d);x.setDate(x.getDate()-((x.getDay()+6)%7));return x.toISOString().split('T')[0];}
+// Returns YYYY-MM-DD in LOCAL time (not UTC) — using toISOString() here would roll the date
+// over at midnight UTC, which is mid-afternoon in US timezones and causes early resets.
+function localDateStr(d){
+  const x=d?new Date(d):new Date();
+  const y=x.getFullYear();const m=String(x.getMonth()+1).padStart(2,'0');const day=String(x.getDate()).padStart(2,'0');
+  return y+'-'+m+'-'+day;
+}
+function getWeekKey(d){const x=new Date(d);x.setDate(x.getDate()-((x.getDay()+6)%7));return localDateStr(x);}
 function getWeekLabel(k){const d=new Date(k+'T12:00:00');const e=new Date(d);e.setDate(e.getDate()+4);const o={month:'short',day:'numeric'};return`Week of ${d.toLocaleDateString('en-US',o)} – ${e.toLocaleDateString('en-US',o)}`;}
+// ── RENEWAL CONTACT TRACKER ───────────────────────────
+// Shows the dates clients renewing 15/30/55 days out, so she knows who to contact today.
+const RENEWAL_KEY='jez_renewal_v1';
+function calcRenewalDate(daysOut){
+  const d=new Date();
+  d.setDate(d.getDate()+daysOut);
+  return d.toLocaleDateString('en-US',{month:'numeric',day:'numeric'});
+}
+function renderRenewalDates(){
+  [15,30,55].forEach(n=>{
+    const el=$('renewal-date-'+n);
+    if(el)el.textContent=calcRenewalDate(n);
+  });
+}
+function loadRenewalState(){
+  try{
+    const raw=localStorage.getItem(RENEWAL_KEY);
+    if(!raw)return;
+    const today=localDateStr();
+    const saved=JSON.parse(raw);
+    // Only restore today's check state — a new day always starts unchecked
+    if(saved.date===today){
+      ['15','30','55'].forEach(n=>{if(saved[n])applyRenewalChecked(n,true);});
+    }
+  }catch(e){}
+}
+function saveRenewalState(){
+  const state={date:localDateStr()};
+  ['15','30','55'].forEach(n=>{state[n]=$('renewal-chk-'+n).classList.contains('checked');});
+  localStorage.setItem(RENEWAL_KEY,JSON.stringify(state));
+}
+function applyRenewalChecked(n,checked){
+  const chk=$('renewal-chk-'+n);const row=$('renewal-'+n);
+  if(checked){chk.classList.add('checked');row.classList.add('checked');}
+  else{chk.classList.remove('checked');row.classList.remove('checked');}
+}
+function toggleRenewal(n){
+  const chk=$('renewal-chk-'+n);
+  const nowChecked=!chk.classList.contains('checked');
+  applyRenewalChecked(n,nowChecked);
+  if(nowChecked)spawnConfetti(chk,8);
+  saveRenewalState();
+}
+function resetRenewalTracker(){
+  ['15','30','55'].forEach(n=>applyRenewalChecked(n,false));
+  localStorage.removeItem(RENEWAL_KEY);
+  renderRenewalDates();
+}
+
 function chkSVG(){return`<svg width="13" height="13" viewBox="0 0 13 13" fill="none" stroke="#fff" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M2 6.5l3 3 6-6"/></svg>`;}
 function chevSVG(){const s=document.createElementNS('http://www.w3.org/2000/svg','svg');s.setAttribute('viewBox','0 0 15 15');s.setAttribute('fill','none');s.setAttribute('stroke','currentColor');s.setAttribute('stroke-width','1.8');s.classList.add('ffr-chev');const p=document.createElementNS('http://www.w3.org/2000/svg','path');p.setAttribute('d','M3 5.5l4.5 4.5L12 5.5');s.appendChild(p);return s;}
 
@@ -828,10 +913,10 @@ function loadClockState(){
   try{
     const raw=localStorage.getItem(CLOCK_KEY);
     if(raw){
-      const today=new Date().toISOString().split('T')[0];
+      const today=localDateStr();
       const parsed=JSON.parse(raw);
       // Only restore if it's from today — otherwise start fresh
-      if(parsed.clockIn&&new Date(parsed.clockIn).toISOString().split('T')[0]===today){
+      if(parsed.clockIn&&localDateStr(parsed.clockIn)===today){
         clockState=parsed;
       }
     }
@@ -1082,6 +1167,8 @@ function clearDaily(){
   clockState={clockIn:null,breakStart:null,breakEnd:null,clockOut:null};
   saveClockState();
   if(typeof renderClock==='function')renderClock();
+  // Reset the renewal contact checkboxes for the new day
+  if(typeof resetRenewalTracker==='function')resetRenewalTracker();
   // Restore persistent items: email follow-ups and FFR follow-ups
   try{
     const raw=localStorage.getItem('jez_persist_v1');
@@ -1093,7 +1180,7 @@ function clearDaily(){
   }catch(e){}
 }
 function checkResets(){
-  const todayStr=new Date().toISOString().split('T')[0];
+  const todayStr=localDateStr();
   const lastDay=localStorage.getItem(DR);
   const lastMon=localStorage.getItem(MR);
   if(lastDay&&lastDay!==todayStr){accumulateDay();clearDaily();}
@@ -1111,7 +1198,6 @@ function checkResets(){
 
 // ── TOGGLE BLOCK ──────────────────────────────────────
 function toggleBlock(id){$('block-'+id).classList.toggle('open');}
-function toggleAllDays(open){DAYS.forEach(d=>{const w=$('ffr-wrap-'+d);if(w){if(open)w.classList.add('open');else w.classList.remove('open');}});}
 function toggleLeftOff(){const b=$('leftOffBox');b.style.display=b.style.display!=='none'?'none':'block';saveState();}
 
 // ── DONE BUTTONS ──────────────────────────────────────
@@ -1502,12 +1588,20 @@ function exportPDF(){
     '<tr style="background:#fff"><td style="padding:7px 12px;border-bottom:1px solid #f0f0f0;font-weight:500;">Break</td><td style="padding:7px 12px;border-bottom:1px solid #f0f0f0;color:#6b7280;">'+clkBreak+'</td></tr>'+
     '<tr style="background:#f9f9f9"><td style="padding:7px 12px;border-bottom:1px solid #f0f0f0;font-weight:500;">Clock Out</td><td style="padding:7px 12px;border-bottom:1px solid #f0f0f0;">'+clkOut+'</td></tr>'+
     '<tr style="background:#fff"><td style="padding:7px 12px;font-weight:700;color:#003DA5;">Total Hours Worked</td><td style="padding:7px 12px;font-weight:700;color:#003DA5;">'+clkHours+'</td></tr>';
+  // renewal contact status
+  const renewalRows=[15,30,55].map((n,i)=>{
+    const checked=$('renewal-chk-'+n).classList.contains('checked');
+    const date=$('renewal-date-'+n).textContent;
+    const bg=i%2?'#fff':'#f9f9f9';
+    return '<tr style="background:'+bg+'"><td style="padding:7px 12px;border-bottom:1px solid #f0f0f0;font-weight:500;">'+n+'-day renewals ('+date+')</td><td style="padding:7px 12px;border-bottom:1px solid #f0f0f0;text-align:center;width:80px;">'+(checked?'<span style="color:#16a34a;font-weight:700;font-size:16px;">✓</span>':'<span style="color:#ccc;">—</span>')+'</td></tr>';
+  }).join('');
   const html=`<!DOCTYPE html><html><head><meta charset="UTF-8"><title>EOD</title><style>*{box-sizing:border-box;margin:0;padding:0;}body{font-family:system-ui,sans-serif;background:#fff;width:800px;padding:0;}</style></head><body>
   <div style="background:#003DA5;color:#fff;padding:20px 24px;display:flex;align-items:center;gap:14px;"><div style="width:6px;height:44px;background:#CC0000;border-radius:3px;flex-shrink:0;"></div><div><div style="font-size:20px;font-weight:800;">Jezreel's End of Day Report</div><div style="font-size:12px;opacity:0.75;margin-top:2px;">Esam Boktor Insurance Agency</div></div><div style="margin-left:auto;font-size:12px;background:rgba(255,255,255,0.18);padding:5px 14px;border-radius:20px;border:1px solid rgba(255,255,255,0.3);">${today}</div></div>
   <div style="padding:20px 24px;background:#f7f8fa;display:flex;align-items:center;gap:20px;border-bottom:1px solid #e5e7eb;">${ring}<div style="flex:1;"><div style="background:#fff;border-radius:6px;padding:10px;text-align:center;border:1px solid #e5e7eb;"><div style="font-size:9px;color:#6b7280;text-transform:uppercase;letter-spacing:0.5px;margin-bottom:4px;">FFRs Scheduled Today</div><div style="font-size:28px;font-weight:700;color:#1a1a1a;">${todayFFR}</div></div></div></div>
   <div style="padding:16px 24px;">
   ${secWrap(sh('Time Clock','#0e7490')+tbl(['',''],clockRows))}
   ${cancelRows?secWrap(sh('Cancellations','#CC0000')+tbl(['Client','Policy / #','Notes'],cancelRows)):''}
+  ${secWrap(sh('Renewal Contacts')+tbl(['Batch','Contacted'],renewalRows))}
   ${ffrRows?secWrap(sh('Scheduled FFRs — '+todayKey)+tbl(['#','Client','Date','Time'],ffrRows)):''}
   ${secWrap(sh('Alerts')+`<div style="padding:10px 14px;">${alertStatus}</div>`+(alertRows?tbl(['Item','Done'],alertRows):''))}
   ${refRows?secWrap(sh('Referrals','#0e7490')+tbl(['Client','Quote Offered','Referred To','Notes'],refRows)):''}
@@ -1691,10 +1785,13 @@ checkResets();
 updateStats();
 highlightBlocks();
 checkSlowAlert();
+renderRenewalDates();
+loadRenewalState();
 setInterval(saveState,30000);
 setInterval(highlightBlocks,60000);
 setInterval(checkSlowAlert,60000);  // check every minute
 setInterval(()=>{checkResets();updateStats();},60000);  // catch midnight rollover even if tab stays open
+setInterval(renderRenewalDates,3600000);  // refresh renewal dates hourly in case of long-open tab
 </script>
 </body>
 </html>
