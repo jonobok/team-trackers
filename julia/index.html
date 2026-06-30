@@ -737,7 +737,14 @@ let HIST={};  // weekly history
 // ── HELPERS ───────────────────────────────────────────
 function $(id){return document.getElementById(id);}
 function getToday(){return['Sunday','Monday','Tuesday','Wednesday','Thursday','Friday','Saturday'][new Date().getDay()];}
-function getWeekKey(d){const x=new Date(d);x.setDate(x.getDate()-((x.getDay()+6)%7));return x.toISOString().split('T')[0];}
+// Returns YYYY-MM-DD in LOCAL time (not UTC) — using toISOString() here would roll the date
+// over at midnight UTC, which is mid-afternoon in US timezones and causes early resets.
+function localDateStr(d){
+  const x=d?new Date(d):new Date();
+  const y=x.getFullYear();const m=String(x.getMonth()+1).padStart(2,'0');const day=String(x.getDate()).padStart(2,'0');
+  return y+'-'+m+'-'+day;
+}
+function getWeekKey(d){const x=new Date(d);x.setDate(x.getDate()-((x.getDay()+6)%7));return localDateStr(x);}
 function getWeekLabel(k){const d=new Date(k+'T12:00:00');const e=new Date(d);e.setDate(e.getDate()+4);const o={month:'short',day:'numeric'};return`Week of ${d.toLocaleDateString('en-US',o)} – ${e.toLocaleDateString('en-US',o)}`;}
 function chkSVG(){return`<svg width="13" height="13" viewBox="0 0 13 13" fill="none" stroke="#fff" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M2 6.5l3 3 6-6"/></svg>`;}
 function chevSVG(){const s=document.createElementNS('http://www.w3.org/2000/svg','svg');s.setAttribute('viewBox','0 0 15 15');s.setAttribute('fill','none');s.setAttribute('stroke','currentColor');s.setAttribute('stroke-width','1.8');s.classList.add('ffr-chev');const p=document.createElementNS('http://www.w3.org/2000/svg','path');p.setAttribute('d','M3 5.5l4.5 4.5L12 5.5');s.appendChild(p);return s;}
@@ -844,7 +851,7 @@ function clearDaily(){
   }catch(e){}
 }
 function checkResets(){
-  const todayStr=new Date().toISOString().split('T')[0];
+  const todayStr=localDateStr();
   const lastDay=localStorage.getItem(DR);
   const lastMon=localStorage.getItem(MR);
   if(lastDay&&lastDay!==todayStr){accumulateDay();clearDaily();}
