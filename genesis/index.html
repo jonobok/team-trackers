@@ -31,6 +31,7 @@ body{font-family:'DM Sans',system-ui,sans-serif;background:var(--bg);color:var(-
 .nav{background:linear-gradient(135deg,var(--blue) 0%,var(--blue-bright) 100%);color:#fff;padding:0 1.5rem;height:60px;display:flex;align-items:center;justify-content:space-between;position:sticky;top:0;z-index:100;box-shadow:0 2px 12px rgba(0,61,165,0.3);}
 .nav-left{display:flex;align-items:center;gap:12px;}
 .nav-stripe{width:5px;height:36px;background:var(--red);border-radius:3px;flex-shrink:0;}
+.version-stamp{cursor:help;}
 .nav-title{font-family:'Syne',sans-serif;font-size:17px;font-weight:800;letter-spacing:-0.3px;}
 .nav-sub{font-size:11px;opacity:0.75;margin-top:2px;}
 .nav-right{display:flex;align-items:center;gap:10px;}
@@ -444,7 +445,7 @@ html.dark .n-card input{color:#ececec;}
 
 <div class="nav">
   <div class="nav-left">
-    <div class="nav-stripe"></div>
+    <div class="nav-stripe version-stamp" title="v5 — Last updated 6/30/2026"></div>
     <div>
       <div class="nav-title">Genesis's Daily Tracker</div>
       <div class="nav-sub">Esam Boktor Insurance Agency</div>
@@ -1168,7 +1169,7 @@ function exportPDF(){
   const ring='<div style="position:relative;width:80px;height:80px;flex-shrink:0;"><svg width="80" height="80" viewBox="0 0 80 80" style="display:block;transform:rotate(-90deg)"><circle fill="none" stroke="#dde6f8" stroke-width="7" cx="40" cy="40" r="32"/><circle fill="none" stroke="'+rc+'" stroke-width="7" stroke-linecap="round" cx="40" cy="40" r="32" stroke-dasharray="'+C+'" stroke-dashoffset="'+Math.round(off)+'"/></svg><div style="position:absolute;inset:0;display:flex;flex-direction:column;align-items:center;justify-content:center;"><div style="font-size:18px;font-weight:800;color:'+rc+';">'+score+'%</div><div style="font-size:9px;color:#6b7280;margin-top:1px;">today</div></div></div>';
   const sh=(title,color)=>'<div style="background:'+(color||'#003DA5')+';color:#fff;padding:9px 14px;font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:0.8px;">'+title+'</div>';
   const tbl=(hdrs,rows)=>'<table style="width:100%;border-collapse:collapse;font-size:13px;"><tr>'+hdrs.map(h=>'<th style="text-align:left;padding:6px 12px;font-size:10px;color:#6b7280;font-weight:600;background:#f5f5f5;border-bottom:1px solid #e5e7eb;text-transform:uppercase;">'+h+'</th>').join('')+'</tr>'+rows+'</table>';
-  const secWrap=(content)=>'<div style="margin-bottom:14px;border-radius:8px;overflow:hidden;border:1px solid #e5e7eb;">'+content+'</div>';
+  const secWrap=(content)=>'<div class="pdf-sec" style="margin-bottom:14px;border-radius:8px;overflow:hidden;border:1px solid #e5e7eb;">'+content+'</div>';
   // cancellation rows
   let cancelRows='';$('cancellationsList').querySelectorAll('.cancel-card').forEach((c,i)=>{const inp=c.querySelector('input');const pi=c.querySelector('.cancel-inp');const ta=c.querySelector('.cancel-notes');const bg=i%2?'#fff':'#f9f9f9';if(inp&&inp.value)cancelRows+=`<tr style="background:${bg}"><td style="padding:7px 12px;border-bottom:1px solid #f0f0f0;font-weight:500;">${inp.value}</td><td style="padding:7px 12px;border-bottom:1px solid #f0f0f0;">${pi?pi.value:'—'}</td><td style="padding:7px 12px;border-bottom:1px solid #f0f0f0;color:#6b7280;">${ta?ta.value:'—'}</td></tr>`;});
   // quote rows
@@ -1204,15 +1205,43 @@ function exportPDF(){
     window.html2canvas(body,{scale:2,useCORS:true,backgroundColor:'#ffffff',width:800,height:H,windowWidth:800}).then(canvas=>{
       const{jsPDF}=window.jspdf;const pdf=new jsPDF({orientation:'portrait',unit:'pt',format:'a4'});
       const pw=pdf.internal.pageSize.getWidth();const ph=pdf.internal.pageSize.getHeight();
-      const ih=(canvas.height/canvas.width)*pw;let page=0;let remaining=ih;
-      while(remaining>0){
-        if(page>0)pdf.addPage();
-        const sy=(page*ph/ih)*canvas.height;const sh2=Math.min((ph/ih)*canvas.height,canvas.height-sy);
-        const sc=document.createElement('canvas');sc.width=canvas.width;sc.height=sh2;
-        sc.getContext('2d').drawImage(canvas,0,sy,canvas.width,sh2,0,0,canvas.width,sh2);
-        pdf.addImage(sc.toDataURL('image/jpeg',0.95),'JPEG',0,0,pw,(sh2/canvas.height)*ih);
-        remaining-=ph;page++;
+      const scaleFactor=canvas.width/800; // html2canvas scale (2) applied on top of the 800px source width
+      const pageHeightPx=ph*(canvas.width/pw); // page height converted into canvas pixel units
+
+      // Collect safe break points: bottom edge of every table row and every section,
+      // measured in the SAME pixel space as the canvas (multiply by scaleFactor).
+      const breakEls=Array.from(body.querySelectorAll('tr, .pdf-sec'));
+      const breakPoints=breakEls.map(el=>{
+        const r=el.getBoundingClientRect();
+        return (r.top+r.height)*scaleFactor; // bottom edge of element in canvas px
+      }).sort((a,b)=>a-b);
+
+      function findBreak(idealY){
+        // Find the largest break point that is <= idealY (so content never gets cut mid-row/section).
+        // If none found close to top (e.g. a single section taller than one page), fall back to idealY.
+        let best=null;
+        for(const bp of breakPoints){
+          if(bp<=idealY)best=bp;else break;
+        }
+        // Don't accept a break point that's too far back (would leave a near-empty page) —
+        // only use it if it's within the last 40% of the page, otherwise just hard-cut at idealY.
+        if(best!==null&&best>idealY*0.6)return best;
+        return idealY;
       }
+
+      let y=0;let page=0;
+      while(y<canvas.height-2){ // -2px tolerance to avoid a stray near-empty final page
+        if(page>0)pdf.addPage();
+        const idealEnd=Math.min(y+pageHeightPx,canvas.height);
+        const sliceEnd=(idealEnd>=canvas.height-2)?canvas.height:findBreak(idealEnd);
+        const sliceH=Math.max(1,sliceEnd-y);
+        const sc=document.createElement('canvas');sc.width=canvas.width;sc.height=sliceH;
+        sc.getContext('2d').drawImage(canvas,0,y,canvas.width,sliceH,0,0,canvas.width,sliceH);
+        const drawnH=(sliceH/canvas.width)*pw; // height in PDF pt units, same aspect ratio
+        pdf.addImage(sc.toDataURL('image/jpeg',0.95),'JPEG',0,0,pw,drawnH);
+        y=sliceEnd;page++;
+      }
+
       const blob=pdf.output('blob');const url=URL.createObjectURL(blob);
       const a=document.createElement('a');a.href=url;a.download='Genesis EOD '+(nd.getMonth()+1)+' '+nd.getDate()+' '+nd.getFullYear()+'.pdf';
       document.body.appendChild(a);a.click();setTimeout(()=>{URL.revokeObjectURL(url);document.body.removeChild(a);},1000);
